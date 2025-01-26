@@ -1,13 +1,20 @@
 @echo off
 
+echo [0;33m "Formatting & Linting --> ruff-html" [0m
+
 :: move to project root
 cd ..
 
-:: formatting imports (paths because the config is broken & don't care to make it work)
-isort ./%PROJECT_NAME% ./tests
+echo [0;33m "Formatting (RUFF)..." [0m
+:: run ruff formatter
+ruff format
 
-:: formatting code (paths because the config is broken & don't care to make it work)
-black ./%PROJECT_NAME% ./tests
+echo [0;33m "Linting (RUFF)..." [0m
+:: run ruff linter
+ruff check ./ruff_html ./tests -o .ruff.json
 
-:: linting (putting paths here too because autism)
-flake8 ./%PROJECT_NAME%
+echo [0;33m "Linting (FLAKE8 PLUGINS)..." [0m
+:: run flake8 first to check dunder all and class attributes order
+flake8 ./ruff_html ./tests
+
+echo [0;33m "Finished Formatting & Linting --> ruff-html" [0m
