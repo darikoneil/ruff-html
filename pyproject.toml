@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 
 [project]
-name = "ruff-html"
+name = "ruff-report"
 version = "0.0.1"
 description = "DESCRIPTION"
 readme = "README.md"
@@ -44,8 +44,8 @@ dependencies = [
 
 
 [project.urls]
-documentation = "https://github.com/darikoneil/ruff-html"
-repository = "https://github.com/darikoneil/ruff-html"
+documentation = "https://github.com/darikoneil/ruff-report"
+repository = "https://github.com/darikoneil/ruff-report"
 
 
 #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,11 +88,11 @@ documentation = [
     "sphinx-rtd-theme",
 ]
 all = [
-    "ruff-html[testing]",
-    "ruff-html[linting]",
-    "ruff-html[coverage]",
-    "ruff-html[distribution]",
-    "ruff-html[documentation]",
+    "ruff-report[testing]",
+    "ruff-report[linting]",
+    "ruff-report[coverage]",
+    "ruff-report[distribution]",
+    "ruff-report[documentation]",
 ]
 
 
@@ -103,7 +103,7 @@ all = [
 
 [tool.setuptools]
 packages = [
-    "ruff-html",
+    "ruff-report",
 ]
 
 
