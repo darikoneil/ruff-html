@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from ruff_html.issues import IssueMapping, create_issue
+from ruff_report.issues import IssueMapping, create_issue
 from warnings import warn
 
 __all__ = [

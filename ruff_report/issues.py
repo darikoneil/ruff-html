@@ -1,9 +1,10 @@
 from enum import IntEnum
 from dataclasses import dataclass
-from typing import Any, Literal, TypeAlias, Iterable
+from sys import maxsize
+from typing import Any, Literal, TypeAlias, Iterable, ValuesView
 from pathlib import Path
 from functools import singledispatchmethod
-from functools import cached_property
+from functools import cached_property, lru_cache
 from warnings import warn
 
 
@@ -423,13 +424,13 @@ class IssueMapping:
         :param issue: The issue dictionary
         """
         #: the actual issues
-        self._values = {}
+        self._values: dict[int, Issue] = {}
         #: keys map to sets of hashes pointing to included issues
-        self._file_map = {}
-        self._ruleset_map = {}
-        self._code_map = {}
-        self._severity_map = {}
-        self._fix_map = {}
+        self._file_map: dict[str, set[int]] = {}
+        self._ruleset_map: dict[str, set[int]] = {}
+        self._code_map: dict[str, set[int]] = {}
+        self._severity_map: dict[str, set[int]] = {}
+        self._fix_map: dict[str, set[int]] = {}
 
     @staticmethod
     def _add_to_map(mapping, key, value) -> None:
@@ -467,7 +468,7 @@ class IssueMapping:
         self._add_to_map(self._file_map, issue.filename, issue_key)
         self._add_to_map(self._ruleset_map, _RULESETS.match(issue.code), issue_key)
         self._add_to_map(self._code_map, issue.code, issue_key)
-        self._add_to_map(self._severity_map, issue.severity, issue_key)
+        self._add_to_map(self._severity_map, issue.severity.name, issue_key)
         if issue.fix is not None:
             self._add_to_map(self._fix_map, issue.fix, issue_key)
 
@@ -491,6 +492,8 @@ class IssueMapping:
         match issue_filters:
             case "filename":
                 return self._retrieve_issues(key, self._file_map)
+            case "ruleset":
+                return self._retrieve_issues(key, self._ruleset_map)
             case "code":
                 return self._retrieve_issues(key, self._ruleset_map)
             case "severity":
@@ -512,3 +515,72 @@ class IssueMapping:
         :return: The issue or issues
         """
         return [self.get_one_filter(filter_, key) for filter_ in issue_filters]
+
+    def get_all(self) -> ValuesView[Issue]:
+        """
+        Get all issues in the mapping
+        """
+        return self._values.values()
+
+    @lru_cache(maxsize=1)
+    def get_total_issues(self) -> int:
+        """
+        Get the total number of issues in a mapping.
+
+        :return: The total number of issues
+        """
+        return len(self.get_all())
+
+    @lru_cache(maxsize=1)
+    def get_total_files(self) -> int:
+        """
+        Get the total number of files in a mapping.
+
+        :return: The total number of files
+        """
+        return len(self._file_map.keys())
+
+    @lru_cache(maxsize=1)
+    def get_total_errors(self) -> int:
+        """
+        Get the total number of errors
+        """
+        return len(self.get("severity", SEVERITY.ERROR.name))
+
+    @lru_cache(maxsize=1)
+    def get_total_warnings(self) -> int:
+        """
+        Get the total number of warnings
+        """
+        return len(self.get("severity", SEVERITY.WARNING.name))
+
+    @lru_cache(maxsize=1)
+    def get_total_best_practices(self) -> int:
+        """
+        Get the total number of best practices
+        """
+        return len(self.get("severity", SEVERITY.BEST_PRACTICE.name))
+
+    @lru_cache(maxsize=1)
+    def get_total_info(self) -> int:
+        """
+        Get the total number of informational messages
+        """
+        return len(self.get("severity", SEVERITY.INFO.name))
+
+    @lru_cache(maxsize=1)
+    def get_total_fixed(self) -> int:
+        """
+        Get the total number of fixed issues
+        """
+        return len(self._fix_map.values())
+
+    @lru_cache(maxsize=1)
+    def get_highest_severity(self) -> str:
+        """
+        Get the highest severity level
+        """
+        max_security = max(
+            (SEVERITY[key] for key in self._severity_map.keys()), default=SEVERITY.NULL
+        )
+        return max_security.name
