@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from enum import IntEnum
 from dataclasses import dataclass
 from sys import maxsize
@@ -9,8 +10,11 @@ from warnings import warn
 
 
 __all__ = [
+    "collect_issues",
+    "Filter",
+    "Filtered_Issues",
+    "Issue",
     "IssueMapping",
-    "create_issue",
 ]
 
 
@@ -419,9 +423,7 @@ def create_issue(serialized_issue: dict) -> Issue:
 class IssueMapping:
     def __init__(self) -> None:
         """
-        Initialize the issue mapping with the given dictionary.
-
-        :param issue: The issue dictionary
+        Initialize the issue mapping
         """
         #: the actual issues
         self._values: dict[int, Issue] = {}
@@ -472,23 +474,9 @@ class IssueMapping:
         if issue.fix is not None:
             self._add_to_map(self._fix_map, issue.fix, issue_key)
 
-    @singledispatchmethod
     def get(
         self, issue_filters: Filter | Iterable[Filter], key: str | list
     ) -> Filtered_Issues:
-        raise TypeError(f"Invalid filter type: {type(issue_filters)}")
-
-    @get.register(str)
-    def get_one_filter(
-        self, issue_filters: Filter, key: str | list[str]
-    ) -> Filtered_Issues:
-        """
-        Get an issue from the mapping.
-
-        :param issue_filters: The filters to apply
-        :param key: The key to get
-        :return: The issue or issues
-        """
         match issue_filters:
             case "filename":
                 return self._retrieve_issues(key, self._file_map)
@@ -503,84 +491,26 @@ class IssueMapping:
             case _:
                 raise ValueError(f"Invalid filter: {issue_filters}")
 
-    @get.register(list)
-    def get_multiple_filters(
-        self, issue_filters: list[Filter], key: str
-    ) -> Filtered_Issues:
-        """
-        Get an issue from the mapping.
-
-        :param issue_filters: The filters to apply
-        :param key: The key to get
-        :return: The issue or issues
-        """
-        return [self.get_one_filter(filter_, key) for filter_ in issue_filters]
-
     def get_all(self) -> ValuesView[Issue]:
         """
         Get all issues in the mapping
         """
         return self._values.values()
 
-    @lru_cache(maxsize=1)
-    def get_total_issues(self) -> int:
+    def iter_files(self) -> Generator[tuple[str, set[Issue]], None, None]:
         """
-        Get the total number of issues in a mapping.
+        Iterate through all files
+        """
+        files = self._file_map.keys()
+        return ((file, self._retrieve_issues(file, self._file_map)) for file in files)
 
-        :return: The total number of issues
-        """
-        return len(self.get_all())
 
-    @lru_cache(maxsize=1)
-    def get_total_files(self) -> int:
-        """
-        Get the total number of files in a mapping.
-
-        :return: The total number of files
-        """
-        return len(self._file_map.keys())
-
-    @lru_cache(maxsize=1)
-    def get_total_errors(self) -> int:
-        """
-        Get the total number of errors
-        """
-        return len(self.get("severity", SEVERITY.ERROR.name))
-
-    @lru_cache(maxsize=1)
-    def get_total_warnings(self) -> int:
-        """
-        Get the total number of warnings
-        """
-        return len(self.get("severity", SEVERITY.WARNING.name))
-
-    @lru_cache(maxsize=1)
-    def get_total_best_practices(self) -> int:
-        """
-        Get the total number of best practices
-        """
-        return len(self.get("severity", SEVERITY.BEST_PRACTICE.name))
-
-    @lru_cache(maxsize=1)
-    def get_total_info(self) -> int:
-        """
-        Get the total number of informational messages
-        """
-        return len(self.get("severity", SEVERITY.INFO.name))
-
-    @lru_cache(maxsize=1)
-    def get_total_fixed(self) -> int:
-        """
-        Get the total number of fixed issues
-        """
-        return len(self._fix_map.values())
-
-    @lru_cache(maxsize=1)
-    def get_highest_severity(self) -> str:
-        """
-        Get the highest severity level
-        """
-        max_security = max(
-            (SEVERITY[key] for key in self._severity_map.keys()), default=SEVERITY.NULL
-        )
-        return max_security.name
+def collect_issues(ruff_report: list[dict]) -> IssueMapping:
+    """
+    Collects issues from a ruff report
+    """
+    issue_mapping = IssueMapping()
+    issues = [create_issue(issue) for issue in ruff_report]
+    for issue in issues:
+        issue_mapping.add(issue)
+    return issue_mapping
