@@ -26,7 +26,7 @@ Implementation for representing issues detected by the ruff linter.
 Filter: TypeAlias = Literal["filename", "ruleset", "code", "severity", "fix"]
 
 
-Filtered_Issues: TypeAlias = set["Issue"] | list[set["Issue"]]
+Filtered_Issues: TypeAlias = set["Issue"]
 
 
 class SEVERITY(IntEnum):
@@ -309,7 +309,7 @@ class Fix:
     message: str
 
     def __post_init__(self):
-        # noinspection PyArgumentList
+        # noinspection PyArgumentList,PyUnresolvedReferences
         self.edits = Edits(**self.edits[0])
 
     def __eq__(self, other: Any) -> bool:
@@ -443,8 +443,7 @@ class IssueMapping:
             mapping[key] = set()
         mapping[key].add(value)
 
-    @staticmethod
-    def _retrieve_issues(key, inner_map: dict) -> set[Issue]:
+    def _retrieve_issues(self, key: str, inner_map: dict) -> set[Issue]:
         """
         Retrieve issues from a mapping.
 
@@ -452,12 +451,22 @@ class IssueMapping:
         :param inner_map: The inner map to retrieve from
         :return: The issue or issues
         """
-        if isinstance(key, str):
-            return inner_map.get(key, set())
-        elif isinstance(key, Iterable):
-            return set.intersection(*(inner_map.get(k, set()) for k in key))
-        else:
-            raise TypeError(f"Invalid key type: {type(key)}")
+        return {self._values[hash_key] for hash_key in inner_map.get(key, set())}
+
+    def _match_filter(self, issue_filter: Filter) -> dict:
+        match issue_filter:
+            case "filename":
+                return self._file_map
+            case "ruleset":
+                return self._ruleset_map
+            case "code":
+                return self._code_map
+            case "severity":
+                return self._severity_map
+            case "fix":
+                return self._fix_map
+            case _:
+                raise ValueError(f"Invalid filter: {issue_filter}")
 
     def add(self, issue: Issue) -> None:
         """
@@ -475,34 +484,26 @@ class IssueMapping:
             self._add_to_map(self._fix_map, issue.fix, issue_key)
 
     def get(
-        self, issue_filters: Filter | Iterable[Filter], key: str | list
-    ) -> Filtered_Issues:
-        match issue_filters:
-            case "filename":
-                return self._retrieve_issues(key, self._file_map)
-            case "ruleset":
-                return self._retrieve_issues(key, self._ruleset_map)
-            case "code":
-                return self._retrieve_issues(key, self._ruleset_map)
-            case "severity":
-                return self._retrieve_issues(key, self._severity_map)
-            case "fix":
-                return self._retrieve_issues(key, self._fix_map)
-            case _:
-                raise ValueError(f"Invalid filter: {issue_filters}")
+        self, key: str, issue_filter: Filter | None = None) -> Filtered_Issues:
+        if filter is None:
+            return self._retrieve_issues(key, self._values)
+        else:
+            # noinspection PyTypeChecker
+            return self._retrieve_issues(key, self._match_filter(issue_filter))
 
-    def get_all(self) -> ValuesView[Issue]:
+    def values(self) -> ValuesView[Issue]:
         """
         Get all issues in the mapping
         """
         return self._values.values()
 
-    def iter_files(self) -> Generator[tuple[str, set[Issue]], None, None]:
+    def iter(self, issue_filter: Filter) -> Generator[tuple[str, set[Issue]], None, None]:
         """
         Iterate through all files
         """
-        files = self._file_map.keys()
-        return ((file, self._retrieve_issues(file, self._file_map)) for file in files)
+        issue_map = self._match_filter(issue_filter)
+        semantic_keys = issue_map.keys()
+        return ((key, self._retrieve_issues(key, issue_map))for key in semantic_keys)
 
 
 def collect_issues(ruff_report: list[dict]) -> IssueMapping:
@@ -510,7 +511,6 @@ def collect_issues(ruff_report: list[dict]) -> IssueMapping:
     Collects issues from a ruff report
     """
     issue_mapping = IssueMapping()
-    issues = [create_issue(issue) for issue in ruff_report]
-    for issue in issues:
-        issue_mapping.add(issue)
+    for issue in ruff_report:
+        issue_mapping.add(create_issue(issue))
     return issue_mapping

@@ -17,7 +17,8 @@ _DEFAULT_TEMPLATE_PATH = Path(R"/ruff_report\templates")
 
 #: Default path to the output file
 _TEMP_OUTPUT_PATH = Path(
-    R"../../../../../../PycharmProjects/ruff-html/ruff_reporter/outputs")
+    R"../../../../../../PycharmProjects/ruff-html/ruff_reporter/outputs"
+)
 _TEMP_OUTPUT_PATH.mkdir(exist_ok=True)
 
 
