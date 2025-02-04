@@ -62,7 +62,7 @@ def locate_output_directory(search_dir: Path) -> Path:
     return output_directory
 
 
-def locate_linted_source(search_dir: Path) -> set[Path]:
+def locate_linted_sources(search_dir: Path) -> set[Path]:
     """
     Locate the source file or directory that was linted
 
@@ -89,9 +89,11 @@ def locate_linted_source(search_dir: Path) -> set[Path]:
 
     for source in sources:
         if Path(source).is_dir():
-            source.add
-    if sources:
-    return None
+            for file in Path(source).rglob("*.py"):
+                sources.add(file)
+
+    return sources
+
 
 
 """
