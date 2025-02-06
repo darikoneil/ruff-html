@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Issues by Severity</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .severity-container {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .severity-header {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        .issue {
+            background-color: #ffdddd;
+            border-bottom: 1px solid #ff0000;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Issues by Severity</h1>
+    {% for severity, issues in issues.items() %}
+    <div class="severity-container">
+        <div class="severity-header">{{ severity }}</div>
+        {% for issue in issues %}
+        <div class="issue">
+            <p><strong>File:</strong> {{ issue.filename }}</p>
+            <p><strong>Message:</strong> {{ issue.message }}</p>
+            <p><strong>Location:</strong> Line {{ issue.location.row }}, Column {{ issue.location.column }}</p>
+            <p><strong>Severity:</strong> {{ issue.severity.name }}</p>
+            {% if issue.url %}
+            <p><strong>More Info:</strong> <a href="{{ issue.url }}" target="_blank">{{ issue.url }}</a></p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</body>
+</html>

@@ -1,16 +1,13 @@
-from pathlib import Path
 import json
+from pathlib import Path
+
 from ruff_reporter.issues import collect_issues
-from jinja2 import Environment, FileSystemLoader
-from ruff_reporter.render import render_source_files
+from ruff_reporter.render import render
 from ruff_reporter.search import locate_source_files
 
-RUFF_FILE = Path(R"C:\Users\Yuste\PycharmProjects\ruff-reporter\.ruff.json")
-OUTPUT_DIR = Path(R"C:\Users\Yuste\PycharmProjects\ruff-reporter\output")
-SOURCE_DIR = Path(R"C:\Users\Yuste\PycharmProjects\ruff-reporter\ruff_reporter")
-
-#: Path to the templates directory
-_TEMPLATE_DIR = Path(__file__).parent.joinpath("templates")
+__all__ = [
+    "reporter",
+]
 
 
 """
@@ -21,27 +18,32 @@ _TEMPLATE_DIR = Path(__file__).parent.joinpath("templates")
 
 
 def reporter() -> None:
-    # First load the ruff results.
-    # Next collect source files.
-    # Finally render the report.
-
-    # TEMPORARY
-    ruff_file = RUFF_FILE
-    output_directory = OUTPUT_DIR
-    source_directories = {SOURCE_DIR}
+    """
+    Main function for ruff-reporter. This function will load the ruff results,
+    organize the issues into a many-key to one-value mapping, collect the source files,
+    and render the report.
+    """
+    ruff_file = Path(R"C:\Users\Yuste\PycharmProjects\ruff-reporter\.ruff.json")
+    output_directory = Path(R"C:\Users\Yuste\PycharmProjects\ruff-reporter\output")
+    source_directories = (
+        Path(R"C:\Users\Yuste\PycharmProjects\ruff-reporter\ruff_reporter"),
+    )
     # TODO: Implement as arguments or infer.
 
-    with open(ruff_file, "r") as file:
+    with open(ruff_file) as file:
         ruff_issues = json.load(file)
 
     issues_map = collect_issues(ruff_issues)
     source_files = locate_source_files(source_directories)
-    environment = Environment(loader=FileSystemLoader(str(_TEMPLATE_DIR)))
 
-    render_source_files(issues_map,
-                        source_files,
-                        environment,
-                        output_directory)
+    if output_directory.exists():
+        for file in output_directory.rglob("*"):
+            if file.is_file():
+                file.unlink()
+    else:
+        output_directory.mkdir(exist_ok=True, parents=True)
+
+    render(issues_map, source_files, output_directory)
 
 
 if __name__ == "__main__":

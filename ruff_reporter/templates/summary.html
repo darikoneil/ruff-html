@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruff Report Summary</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .summary-container {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .summary-header {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        .summary-item {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ruff Report Summary</h1>
+    <div class="summary-container">
+        <div class="summary-header">Summary</div>
+        <div class="summary-item"><strong>Files Scanned:</strong> {{ statistics.total_files }}</div>
+        <div class="summary-item"><strong>Total Issues:</strong> {{ statistics.total_issues }}</div>
+        <div class="summary-item"><strong>Highest Severity:</strong> {{ statistics.highest_severity }}</div>
+        <div class="summary-item"><strong>Date Built:</strong> {{ render_date }}</div>
+    </div>
+</body>
+</html>

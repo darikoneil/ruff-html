@@ -4,16 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ruff Lint Report for {{ filename }}</title>
+    <link rel="stylesheet" href="assets/styles.css">
     <style>
-        body { font-family: Arial, sans-serif; }
+        body { font-family: Arial, sans-serif; color: #46eb74 }
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 8px; }
-        th { background-color: #f2f2f2; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
+        th { background-color: var(--flare); }
+        tr:nth-child(even) { background-color: var(--flare); }
     </style>
 </head>
 <body>
-    <h1>Ruff Lint Report for {{ filename }}</h1>
+    <h1>{{ filename }}</h1>
+    <p>
+        <strong>Issues:</strong> {{ statistics.issues }}<br>
+        <strong>Grade:</strong> {{ statistics.grade }}<br>
+        <strong>Severity:</strong> {{ statistics.max_severity.name.capitalize() }}<br>
+
+    </p>
     <table>
         <tr>
             <th>Line</th>
@@ -28,7 +35,8 @@
             <td>{{ issue.location.column }}</td>
             <td>{{ issue.code }}</td>
             <td>{{ issue.message }}</td>
-            <td><a href="{{ issue.url }}">Link</a></td>
+            <td><!--suppress HtmlUnknownTarget -->
+                <a href="{{ issue.url }}">Link</a></td>
         </tr>
         {% endfor %}
     </table>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ filename }} - Source Code</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .code-container {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            white-space: pre;
+            font-family: 'Courier New', Courier, monospace;
+            position: relative;
+        }
+        .issue {
+            background-color: #ffdddd;
+            border-bottom: 1px solid #ff0000;
+            display: inline-block;
+        }
+        .issue-tooltip {
+            display: none;
+            position: absolute;
+            background-color: #333;
+            color: #fff;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 10;
+        }
+        .issue:hover .issue-tooltip {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ filename }} - Source Code</h1>
+    <div class="code-container">
+        {% for line in source_code.split('\n') %}
+            {% set line_number = loop.index0 %}
+            {% set issues_on_line = issues | selectattr('location.row', 'equalto', line_number + 1) | list %}
+            {% if issues_on_line %}
+                <div class="issue" title="{{ issues_on_line[0].message }}">
+                    {{ line }}
+                    <span class="issue-tooltip">{{ issues_on_line[0].message }}</span>
+                </div>
+            {% else %}
+                {{ line }}
+            {% endif %}
+            <br>
+        {% endfor %}
+    </div>
+</body>
+</html>

@@ -11,7 +11,7 @@ ruff format
 
 echo [0;33m "Linting (RUFF)..." [0m
 :: run ruff linter
-ruff check ./ruff_reporter -o .ruff.json --output-format json
+ruff check ./ruff_reporter -o .ruff.json --output-format json --fix --no-cache
 
 echo [0;33m "Linting (FLAKE8 PLUGINS)..." [0m
 :: run flake8 first to check dunder all and class attributes order

@@ -1,6 +1,10 @@
 from pathlib import Path
 from warnings import warn
 
+__all__ = [
+    "locate_source_files",
+]
+
 
 """
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -14,6 +18,8 @@ def _locate_file(search_dir: Path, tag: str) -> Path:
     Internal method for locating files
 
     :param search_dir: Directory to conduct file search in
+    :param tag: Tag to search for
+    :return: Path to file
     """
     # Only search recursively if we didn't find a file to avoid (potentially) searching
     # through a massive collection of files
@@ -25,7 +31,8 @@ def _locate_file(search_dir: Path, tag: str) -> Path:
         first_file = next(files, None)
 
     if first_file is None:
-        raise FileNotFoundError(f"No {tag} file found in {search_dir}")
+        msg = f"No {tag} file found in {search_dir}"
+        raise FileNotFoundError(msg)
     if next(files, None) is not None:
         warn(
             f"Multiple {tag} files found in {search_dir}, selected {first_file}",
@@ -35,8 +42,15 @@ def _locate_file(search_dir: Path, tag: str) -> Path:
     return first_file
 
 
-def locate_source_files(search_dir: Path | set[Path]) -> set[Path]:
-    if isinstance(search_dir, set):
-        return {file for directory in search_dir for file in locate_source_files(directory)}
-    else:
-        return {file for file in search_dir.rglob("*.py")}
+def locate_source_files(search_dir: Path | tuple[Path]) -> set[Path]:
+    """
+    Locate source files in the given directory or set of directories.
+
+    :param search_dir: The directory or directories to search for source files.
+    :return: A set of source files.
+    """
+    if isinstance(search_dir, tuple):
+        return {
+            file for directory in search_dir for file in locate_source_files(directory)
+        }
+    return set(search_dir.rglob("*.py"))
