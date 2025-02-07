@@ -57,6 +57,32 @@ def copy_assets(output_directory: Path) -> None:
             copy2(assets_directory.joinpath(asset), output_assets)
 
 
+def short_set_of_paths_match(abs_path: Path, paths: set[Path], ) -> Path:
+    """
+    Check if any path in a set of relative paths matches the given absolute path.
+
+    :param abs_path: The path to check for.
+    :param paths: The set of paths to check.
+    :return: True if the set contains a path that matches the given path.
+    """
+    # Since we are using a set of a folder & file pair,
+    # I don't ~think~ we need to worry about multiple matches
+    # noinspection PyTypeChecker
+    return next((set_path for set_path in paths if abs_path.match(set_path)),
+                abs_path.stem)
+
+
+def clean_path(path: Path) -> str:
+    """
+    Clean a path for display.
+
+    :param path: The path to clean.
+    :return: The cleaned path.
+    """
+    # platform independent
+    return str(path).replace("\\", "/").replace("/", "-")
+
+
 """
 ////////////////////////////////////////////////////////////////////////////////////////
 // RENDER FUNCS
@@ -77,12 +103,13 @@ def render_source_files(
 
     for source_file, issues in issues_map.iter("filename"):
         source_file = Path(source_file)
+        cleaned_name = short_set_of_paths_match(source_file, source_files)
         source_code = collect_source_code(source_file)
         statistics = calculate_statistics(issues, source_code)
-        sum_out_file = output_directory.joinpath(f"{source_file.stem}-summary.html")
-        src_out_file = output_directory.joinpath(f"{source_file.stem}-source.html")
+        sum_out_file = output_directory.joinpath(f"{clean_path(cleaned_name)}-summary.html")
+        src_out_file = output_directory.joinpath(f"{clean_path(cleaned_name)}-source.html")
         rendered_summary = file_template.render(
-            filename=source_file.stem, issues=issues, statistics=statistics
+            filename=cleaned_name, issues=issues, statistics=statistics
         )
         with open(sum_out_file, "w") as file:
             file.write(rendered_summary)
@@ -123,6 +150,7 @@ def render_ruleset_files(
     environment: Environment,
     output_directory: Path,
 ) -> None:
+    # TODO: Implement ruleset.html template
     ruleset_template = environment.get_template("ruleset.html")
     for ruleset, issues in issues_map.iter("ruleset"):
         rendered_ruleset = ruleset_template.render(ruleset=ruleset, issues=issues)
@@ -136,6 +164,7 @@ def render_all_file(
     environment: Environment,
     output_directory: Path,
 ) -> None:
+    # TODO: Implement all.html template
     all_template = environment.get_template("all.html")
     rendered_all = all_template.render(issues=issues_map)
     out_file = output_directory.joinpath("all.html")
@@ -148,6 +177,7 @@ def render_summary_file(
     environment: Environment,
     output_directory: Path,
 ) -> None:
+    # TODO: Implement summary.html template
     summary_template = environment.get_template("summary.html")
     rendered_summary = summary_template.render(issues=issues_map)
     out_file = output_directory.joinpath("index.html")

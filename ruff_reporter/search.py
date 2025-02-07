@@ -49,8 +49,10 @@ def locate_source_files(search_dir: Path | tuple[Path]) -> set[Path]:
     :param search_dir: The directory or directories to search for source files.
     :return: A set of source files.
     """
+    # Files are returned as relative to the search directory's parent to ensure that
+    # names are interpretable while identical files in different modules are distinct.
     if isinstance(search_dir, tuple):
         return {
             file for directory in search_dir for file in locate_source_files(directory)
         }
-    return set(search_dir.rglob("*.py"))
+    return {file.relative_to(search_dir.parent) for file in search_dir.rglob("*.py")}
