@@ -4,8 +4,8 @@ from shutil import copy2
 from jinja2 import Environment, FileSystemLoader
 
 #
-from ruff_reporter.issues import IssueMapping
-from ruff_reporter.quality import calculate_statistics
+from ruff_reporter.issues import Issue, IssueMapping
+from ruff_reporter.quality import Statistics, calculate_statistics
 
 __all__ = [
     "render",
@@ -23,18 +23,18 @@ _REQUIRED_ASSETS = ("styles.css",)
 """
 
 
-def collect_source_code(source_file: Path) -> str:
+def _collect_source_code(source_file: Path) -> str:
     """
     Collect the source code from a file.
 
     :param source_file: The file to collect the source code from.
     :return: The source code from the file.
     """
-    with open(source_file) as file:
+    with source_file.open("r") as file:
         return file.read()
 
 
-def copy_assets(output_directory: Path) -> None:
+def _copy_assets(output_directory: Path) -> None:
     """
     Copy the required assets to the output directory.
 
@@ -57,7 +57,10 @@ def copy_assets(output_directory: Path) -> None:
             copy2(assets_directory.joinpath(asset), output_assets)
 
 
-def short_set_of_paths_match(abs_path: Path, paths: set[Path], ) -> Path:
+def _match_abs_rel(
+    abs_path: Path,
+    paths: set[Path],
+) -> Path:
     """
     Check if any path in a set of relative paths matches the given absolute path.
 
@@ -68,19 +71,21 @@ def short_set_of_paths_match(abs_path: Path, paths: set[Path], ) -> Path:
     # Since we are using a set of a folder & file pair,
     # I don't ~think~ we need to worry about multiple matches
     # noinspection PyTypeChecker
-    return next((set_path for set_path in paths if abs_path.match(set_path)),
-                abs_path.stem)
+    return next(
+        (set_path for set_path in paths if abs_path.match(set_path)), abs_path.stem
+    )
 
 
-def clean_path(path: Path) -> str:
+def _clean_relative_path(relative_path: Path) -> str:
     """
-    Clean a path for display.
+    Clean a relative path to use as a filename.
 
-    :param path: The path to clean.
+    :param relative_path: The path to clean.
     :return: The cleaned path.
     """
     # platform independent
-    return str(path).replace("\\", "/").replace("/", "-")
+    return str(relative_path).replace("\\", "/").replace("/", "-").replace(".py", "")
+
 
 
 """
@@ -90,45 +95,67 @@ def clean_path(path: Path) -> str:
 """
 
 
+def render_file_summary(
+    environment: Environment,
+    issues: set[Issue],
+    statistics: Statistics,
+    cleaned_relative_path: str,
+    output_directory: Path,
+):
+    file_template = environment.get_template("file_summary.html")
+    save_path = output_directory.joinpath(f"{cleaned_relative_path}-summary.html")
+    rendered_summary = file_template.render(
+        filename=cleaned_relative_path, issues=issues, statistics=statistics
+    )
+    with save_path.open("w") as file:
+        file.write(rendered_summary)
+
+
+def render_file_source(
+    environment: Environment,
+    issues: set[Issue],
+    source_code: str,
+    cleaned_relative_path: str,
+    output_directory: Path,
+):
+    source_template = environment.get_template("file_source.html")
+    save_path = output_directory.joinpath(f"{cleaned_relative_path}-source.html")
+    rendered_source = ""
+    # TODO: Implement file_source.html template
+    with save_path.open("w") as file:
+        file.write(rendered_source)
+
+
 def render_source_files(
     issues_map: IssueMapping,
     source_files: set[Path],
     environment: Environment,
     output_directory: Path,
 ) -> None:
-    # TODO: Implement source.html template
-    file_template = environment.get_template("file_summary.html")
-    source_template = environment.get_template("file_source.html")
     rendered_files = set()
-
-    for source_file, issues in issues_map.iter("filename"):
-        source_file = Path(source_file)
-        cleaned_name = short_set_of_paths_match(source_file, source_files)
-        source_code = collect_source_code(source_file)
+    for absolute_path, issues in issues_map.iter("filename"):
+        # I'd rather convert it here than in each downstream function or have to
+        # convert Path <--> str in the IssueMapping / Issue
+        absolute_path = Path(absolute_path)
+        relative_path = _match_abs_rel(absolute_path, source_files)
+        cleaned_relative_path = _clean_relative_path(relative_path)
+        source_code = _collect_source_code(absolute_path)
         statistics = calculate_statistics(issues, source_code)
-        sum_out_file = output_directory.joinpath(f"{clean_path(cleaned_name)}-summary.html")
-        src_out_file = output_directory.joinpath(f"{clean_path(cleaned_name)}-source.html")
-        rendered_summary = file_template.render(
-            filename=cleaned_name, issues=issues, statistics=statistics
+        render_file_summary(
+            environment, issues, statistics, cleaned_relative_path, output_directory
         )
-        with open(sum_out_file, "w") as file:
-            file.write(rendered_summary)
-
-        rendered_source = ""
-        with open(src_out_file, "w") as file:
-            file.write(rendered_source)
-
-        rendered_files.add(source_file)
-
-    clean_files = source_files.difference(rendered_files)
-    for file in clean_files:
-        sum_out_file = output_directory.joinpath(f"{file.stem}-summary.html")
-        rendered_summary = file_template.render(
-            filename=file.stem, issues=set(), statistics=calculate_statistics(set(), "")
+        render_file_source(
+            environment, issues, source_code, cleaned_relative_path, output_directory
         )
-        # noinspection PyAssignmentToLoopOrWithParameter
-        with open(sum_out_file, "w") as file:
-            file.write(rendered_summary)
+        rendered_files.add(relative_path)
+
+    perfect_files = source_files.difference(rendered_files)
+    for file in perfect_files:
+        statistics = calculate_statistics(set(), "")
+        cleaned_relative_path = _clean_relative_path(file)
+        render_file_summary(
+            environment, set(), statistics, cleaned_relative_path, output_directory
+        )
 
 
 def render_severity_files(
@@ -199,7 +226,7 @@ def render(
 ) -> None:
     template_directory = Path(__file__).parent.joinpath("templates")
     environment = Environment(loader=FileSystemLoader(str(template_directory)))
-    copy_assets(output_directory)
+    _copy_assets(output_directory)
     render_source_files(issues_map, source_files, environment, output_directory)
     # render_severity_files(issues_map, environment, output_directory)
     # render_ruleset_files(issues_map, environment, output_directory)
