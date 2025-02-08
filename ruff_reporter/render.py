@@ -41,7 +41,7 @@ def _copy_assets(output_directory: Path) -> None:
     :param output_directory: The directory to copy the assets to.
     """
     assets_directory = Path(__file__).parent.joinpath("templates", "assets")
-    output_assets = output_directory.joinpath("templates/assets")
+    output_assets = output_directory.joinpath("assets")
     output_assets.mkdir(exist_ok=True, parents=True)
     for asset in _REQUIRED_ASSETS:
         try:
@@ -87,7 +87,6 @@ def _clean_relative_path(relative_path: Path) -> str:
     return str(relative_path).replace("\\", "/").replace("/", "-").replace(".py", "")
 
 
-
 """
 ////////////////////////////////////////////////////////////////////////////////////////
 // RENDER FUNCS
@@ -102,10 +101,22 @@ def render_file_summary(
     cleaned_relative_path: str,
     output_directory: Path,
 ):
+    """
+    Render a file summary.
+
+    :param environment: The Jinja2 environment to use.
+    :param issues: The issues to render.
+    :param statistics: The statistics to render.
+    :param cleaned_relative_path: The cleaned relative path to use.
+    :param output_directory: The output directory to save the file to.
+    """
     file_template = environment.get_template("file_summary.html")
     save_path = output_directory.joinpath(f"{cleaned_relative_path}-summary.html")
+    issues = sorted(issues, key=lambda issue: issue.severity, reverse=True)
     rendered_summary = file_template.render(
-        filename=cleaned_relative_path, issues=issues, statistics=statistics
+        filename=cleaned_relative_path.replace("-", "/"),
+        issues=issues,
+        statistics=statistics,
     )
     with save_path.open("w") as file:
         file.write(rendered_summary)
@@ -118,10 +129,22 @@ def render_file_source(
     cleaned_relative_path: str,
     output_directory: Path,
 ):
+    """
+    Render a file source.
+
+    :param environment: The Jinja2 environment to use.
+    :param issues: The issues to render.
+    :param source_code: The source code to render.
+    :param cleaned_relative_path: The cleaned relative path to use.
+    :param output_directory: The output directory to save the file to.
+    """
     source_template = environment.get_template("file_source.html")
     save_path = output_directory.joinpath(f"{cleaned_relative_path}-source.html")
-    rendered_source = ""
-    # TODO: Implement file_source.html template
+    rendered_source = source_template.render(
+        filename=cleaned_relative_path.replace("-", "/"),
+        issues=issues,
+        source_code=source_code,
+    )
     with save_path.open("w") as file:
         file.write(rendered_source)
 
@@ -132,6 +155,14 @@ def render_source_files(
     environment: Environment,
     output_directory: Path,
 ) -> None:
+    """
+    Render the source files.
+
+    :param issues_map: The issues map to render.
+    :param source_files: The source files to render.
+    :param environment: The Jinja2 environment to use.
+    :param output_directory: The output directory to save the files to.
+    """
     rendered_files = set()
     for absolute_path, issues in issues_map.iter("filename"):
         # I'd rather convert it here than in each downstream function or have to

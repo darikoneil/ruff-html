@@ -6,8 +6,13 @@
   --lunar: #fbf2fc;
   --aurora: #46eb74;
   --neutron: #cff3cf;
+  --supernova: #c9374c;
+  --cosmos: #5DAAD9;
+  --cream: #ffc249;
+
 }
 
+/* Global styles */
 body {
   background-color: var(--galaxy);
   color: var(--lunar);
@@ -26,6 +31,75 @@ p {
     color: var(--lunar);
 }
 
+a {
+    color: var(--radiate);
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.dot {
+
+}
+
+.grade-high {
+    color: var(--aurora);
+}
+
+.grade-medium {
+    color: var(--cosmos);
+}
+
+.grade-low {
+    color: var(--supernova);
+}
+
+.severity-error {
+    background-color: var(--supernova);
+    height: 25px;
+    width: 25px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.severity-warning {
+    background-color: var(--cream);
+    height: 25px;
+    width: 25px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.severity-best-practice {
+    background-color: var(--cosmos);
+    height: 25px;
+    width: 25px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.severity-info {
+    background-color: var(--neutron);
+    height: 25px;
+    width: 25px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.severity-fixed {
+    background-color: var(--aurora);
+    height: 25px;
+    width: 25px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+
+.issue{
+    background-color: var(--supernova);
+    color: var(--lunar);
+    display: inline-block;
+}
+/* Header styles */
 #homeheader {
   display: flex;
   justify-content: space-between;
@@ -46,4 +120,58 @@ p {
    box-shadow: 0 36px var(--galaxy);
    padding: 0;
    margin: 0;
+}
+
+/* Issue Tables */
+#file_summary table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#file_summary th, #file_summary td {
+    border: 1px solid var(--galaxy);
+    padding: 8px;
+    text-align: center;
+}
+
+#file_summary td {
+    border: 1px solid var(--galaxy);
+    padding: 8px;
+    text-align: center;
+}
+
+
+#file_summary th {
+    background-color: var(--space);
+}
+
+#file_summary tr:nth-child(even) {
+    background-color: var(--galaxy);
+}
+
+#file_summary tr:nth-child(odd) {
+    background-color: var(--space);
+}
+
+.code-container {
+    background-color: var(--space);
+    border: 1px solid black;
+    padding: 5px;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.issue-tooltip {
+    display: none;
+    position: absolute;
+    background-color: #333;
+    color: #fff;
+    padding: 5px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 10;
+}
+
+.issue:hover .issue-tooltip {
+    display: block;
 }
